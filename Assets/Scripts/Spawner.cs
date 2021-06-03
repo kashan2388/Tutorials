@@ -33,10 +33,27 @@ public class Spawner : MonoBehaviour
 
     IEnumerator SpawnEnemy()
     {
-        Transform 
+        float spawnDelay = 1;
+        float tileFlashSpeed = 4;
+
+        Transform randomTile = map.GetRandomOpenTile();
+        Material tileMat = randomTile.GetComponent<Renderer>() .material;
+        Color initialColour = tileMat.color;
+        Color flashColur = Color.red;
+        float spawnTimer = 0;
+
+        while (spawnTimer < spawnDelay)
+        {
+           tileMat.color = Color.Lerp(initialColour, flashColur, Mathf.PingPong(spawnTimer * tileFlashSpeed, 1));
+
+            spawnTimer += Time.deltaTime;
+            yield return null;
+        }
+
         Enemy spawnedEnemy = Instantiate(enemy, Vector3.zero, Quaternion.identity) as Enemy;
         spawnedEnemy.OnDeath += OnEnemyDeath; //적 스폰 때마다 spawnEnemy.OnDeath 에 OnEnemyOnDeath메서드 추가
 
+        
 
     }
      
