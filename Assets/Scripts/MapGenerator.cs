@@ -24,10 +24,16 @@ public class MapGenerator : MonoBehaviour
 
 	Map currentMap;
 
-	void Start()
+	void Awake()
 	{
-		GenerateMap();
+		FindObjectOfType<Spawner>().OnNewWave += OnNewWave;
 	}
+
+	void OnNewWave(int waveNumber)
+    {
+		mapIndex = waveNumber - 1;
+		GenerateMap();
+    }
 
 	public void GenerateMap() 
 	{
@@ -170,9 +176,21 @@ public class MapGenerator : MonoBehaviour
 		return targetAccessibleTileCount == accessibleTileCount;
 	}
 
-	Vector3 CoordToPosition(int x, int y)
+	Vector3 CoordToPosition(int x, int y) //좌표 Coord를 Vectroe3위치로 변환 -> x축에선 mapsize를 2, 
 	{
 		return new Vector3(-currentMap.mapSize.x / 2f + 0.5f + x, 0, -currentMap.mapSize.y / 2f + 0.5f + y) * tileSize;
+	}
+
+	//플레이어의 위치를 가져와 좌표로 변환 - 타일을 알아내기 위함 (위의 구문과 반대의 역할)
+	public Transform GetTileFromPosition(Vector3 position)
+    {
+		int x =Mathf.RoundToInt( position.x / tileSize + (currentMap.mapSize.x - 1) / 2f);
+		int y = Mathf.RoundToInt(position.z / tileSize + (currentMap.mapSize.y - 1) / 2f); //우리가 생각하는 y는 3차원에서는 z임을 
+		//값을 제한할 때 GetLength의 값과 같을 순 없다. 배열은 0을 기준으로 세며 따라서 실제로는 길이에서 1을 빼주어야 한다. 
+		x = Mathf.Clamp(x, 0, tileMap.GetLength(0)-1);
+		y = Mathf.Clamp(y, 0, tileMap.GetLength(1));
+		return tileMap[x, y];
+
 	}
 
 	public Coord GetRandomCoord()

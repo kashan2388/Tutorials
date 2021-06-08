@@ -7,6 +7,9 @@ public class Spawner : MonoBehaviour
     public Wave[] Waves; //웨이브 배열
     public Enemy enemy;
 
+    LivingEntity playerEntity;
+    Transform playerT;
+
     Wave currenWave;
     int currentWaveNumber;//현재 웨이브 횟수
 
@@ -15,19 +18,51 @@ public class Spawner : MonoBehaviour
     int enemiesRemaingAlive;
 
     MapGenerator map;
+
+    float timeBetWeenCampingChecks = 2;
+    float campThresholdDistance = 1.5f; //캠프 한계거리(최소 움직여야 할 거리)
+    float nextCampCheckTime;
+    Vector3 campPositionOld;
+    bool isCamping;
+
+    bool isDisabled;
+
+    public event System.Action<int> OnNewWave;
+
     void Start()
     {
+        playerEntity = FindObjectOfType<Player>();
+        playerT = playerEntity.transform;
+
+        nextCampCheckTime = timeBetWeenCampingChecks + Time.time;
+        campPositionOld = playerT.position;
+        playerEntity.OnDeath += OnPlayerDeath;
+
         map = FindObjectOfType<MapGenerator>();
         NextWave();
+
     }
     void Update()
     {
-        if(enemiesRemainingToSpawn >0 && Time.time > nextSpawnTime) //남아있는 스폰될 적이 0보다 크고 현재 시간이 다음스폰시간보다 크다면 
+        if (!isDisabled)
         {
-            enemiesRemainingToSpawn--; //남아있는 스폰될 적을 하나 줄이고 
-            nextSpawnTime = Time.time + currenWave.timeBetweenSpawns; //Time.time 이 현재시간을 가리킴
+            if (Time.time > nextCampCheckTime)
+            {
+                nextCampCheckTime = Time.time + timeBetWeenCampingChecks;
 
-            StartCoroutine(SpawnEnemy());
+                //플레이어의 현재위치와 과거위치 사이의 거리가, 기준거리(campDistance)보다 작은가? 
+                isCamping = (Vector3.Distance(playerT.position, campPositionOld) < campThresholdDistance);
+                campPositionOld = playerT.position;
+
+            }
+
+            if (enemiesRemainingToSpawn > 0 && Time.time > nextSpawnTime) //남아있는 스폰될 적이 0보다 크고 현재 시간이 다음스폰시간보다 크다면 
+            {
+                enemiesRemainingToSpawn--; //남아있는 스폰될 적을 하나 줄이고 
+                nextSpawnTime = Time.time + currenWave.timeBetweenSpawns; //Time.time 이 현재시간을 가리킴
+
+                StartCoroutine(SpawnEnemy());
+            }
         }
     }
 
@@ -36,8 +71,12 @@ public class Spawner : MonoBehaviour
         float spawnDelay = 1;
         float tileFlashSpeed = 4;
 
-        Transform randomTile = map.GetRandomOpenTile();
-        Material tileMat = randomTile.GetComponent<Renderer>() .material;
+        Transform spawnTile = map.GetRandomOpenTile();
+        if(isCamping)
+        {
+            spawnTile = map.GetTileFromPosition(playerT.position);
+        }
+        Material tileMat = spawnTile.GetComponent<Renderer>() .material;
         Color initialColour = tileMat.color;
         Color flashColur = Color.red;
         float spawnTimer = 0;
@@ -49,12 +88,15 @@ public class Spawner : MonoBehaviour
             spawnTimer += Time.deltaTime;
             yield return null;
         }
-
-        Enemy spawnedEnemy = Instantiate(enemy, Vector3.zero, Quaternion.identity) as Enemy;
+        //위의 구문, spawnTimer이 대기시간 spawndelay를 넘었을 때 아래의 구문 실행(적을 소환)
+        Enemy spawnedEnemy = Instantiate(enemy, spawnTile.position + Vector3.up, Quaternion.identity) as Enemy;
         spawnedEnemy.OnDeath += OnEnemyDeath; //적 스폰 때마다 spawnEnemy.OnDeath 에 OnEnemyOnDeath메서드 추가
 
-        
+    }
 
+    void OnPlayerDeath()
+    {
+        isDisabled = true;
     }
      
     void OnEnemyDeath()
@@ -69,7 +111,7 @@ public class Spawner : MonoBehaviour
         }
     }
 
-    void NextWave()
+    void NextWave() //처음과 플레잉어가 웨이브를 끝낼 때마다 호출 
     {
         currentWaveNumber++;
         print("웨이브 " + currentWaveNumber);
@@ -80,6 +122,11 @@ public class Spawner : MonoBehaviour
             enemiesRemainingToSpawn = currenWave.enemyCount;
 
             enemiesRemaingAlive = enemiesRemainingToSpawn;
+
+            if(OnNewWave != null)
+            {
+                OnNewWave(currentWaveNumber);
+            }
         }
 
     }
