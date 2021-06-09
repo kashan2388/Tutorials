@@ -111,6 +111,11 @@ public class Spawner : MonoBehaviour
         }
     }
 
+    void ResetPlayerPosition()
+    {
+        playerT.position = map.GetTileFromPosition(Vector3.zero).position + Vector3.up*3;
+    }
+
     void NextWave() //처음과 플레잉어가 웨이브를 끝낼 때마다 호출 
     {
         currentWaveNumber++;
@@ -127,6 +132,7 @@ public class Spawner : MonoBehaviour
             {
                 OnNewWave(currentWaveNumber);
             }
+            ResetPlayerPosition();
         }
 
     }

@@ -29,6 +29,7 @@ public class LivingEntity : MonoBehaviour, IDamageable
         print("플레이어 현재 Hp: " + health);
     }
 
+    [ContextMenu("Self Destruct")]
     protected void Die()
     {
         dead = true;
