@@ -31,4 +31,9 @@ public class GameUI : MonoBehaviour
             yield return null;
         }
     }
+
+    public void StartNewGame()
+    {
+        Application.LoadLevel("Game");
+    }
 }
