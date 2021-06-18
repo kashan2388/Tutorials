@@ -37,4 +37,3 @@ public class GameUI : MonoBehaviour
         Application.LoadLevel("Game");
     }
 }
-s
